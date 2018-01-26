@@ -3,18 +3,27 @@
 'use strict';
 
 const opMap = {
-  "Parent": "",
   "+": "AND",
   "|": "OR",
-  "|>": "OR",
   "!": "AND NOT",
-  ">": "AND >"
+  "|!": "OR NOT"
 }
+const opPrefixes = Object.keys(opMap);
 
 const QueryFromExpression = (searchExpression, fieldName) => {
-  return searchExpression.split(" ").reduceLeft(expr => {
+  console.log("... " + searchExpression + " ...")
+  return searchExpression.split(" ").reduce((query, expr) => {
+    // console.log("expr " + expr)
+    const op = [...opPrefixes.filter(op => expr.trim().startsWith(op))].pop() // get last element
+    const val = expr.replace(op, "").trim();
 
-  })
+    // TODO this if should depend on type(field) because of mysql
+    if (/-?\d+/.test(val)) { // number
+      return `${query} ${opMap.hasOwnProperty(op) ? opMap[op] : "AND"} ${fieldName}${/^\d+$/.test(val) ? " =": ""} ${val}`
+    } else { // string
+      return `${query} ${opMap.hasOwnProperty(op) ? opMap[op] : "AND"} ${fieldName} LIKE %${val}%`
+    }
+  }, `TRUE`)
 }
 
 console.log(QueryFromExpression("x |y z", "address")) // x OR (y AND z)
