@@ -27,5 +27,5 @@ const QueryFromExpression = (searchExpression, fieldName) => {
 }
 
 console.log(QueryFromExpression("x |y z", "address")) // x OR (y AND z)
-console.log(QueryFromExpression("v !x |y !z", "address"))
+console.log(QueryFromExpression("v !x |y |!z", "address"))
 console.log(QueryFromExpression("3 |>10 <20", "address"))
