@@ -13,7 +13,9 @@ const opMap = {
   "Parent": "",
   "+": "AND",
   "|": "OR",
-  "!": "AND NOT"
+  "|>": "OR",
+  "!": "AND NOT",
+  ">": "AND >"
 }
 
 const parse = tokens => {
@@ -26,7 +28,11 @@ const parse = tokens => {
   }
 
   // Only primite types consume (?)
-  const parseNum = () => ({val: parseInt(consume()), type: Num});
+  const parseNum = () => {
+    const node = {val: peek().trim() /* hasOp(peek()) ? parseInt(getVal().trim()) : parseInt(peek().trim())*/ , type: Num}
+    if (/^\d+$/.test(node.val)) node.val = "=" + node.val;
+    consume(); return node;
+  }
   const parseStr = () => {
     const node = {val: hasOp(peek()) ? String(getVal()).trim() : String(peek()).trim(), type: Str};
     consume(); return node;
@@ -78,9 +84,8 @@ const parse = tokens => {
   return node;
 }
 
-// TODO add spaces, correct formatting
 const compile = (ast, fieldName) => {
-  const compileNum = ast => ast.val;
+  const compileNum = ast => `${fieldName} ${ast.val}`;
   const compileStr = ast => `${fieldName} LIKE %${ast.val}%`;
   const compileOp = ast => {
     // console.log("\ncompileOp " + opMap[ast.val]); console.log(ast);
@@ -107,4 +112,4 @@ const QueryFromExpression = (searchExpression, fieldName) => {
 
 console.log(QueryFromExpression("x |y z", "address")) // x OR (y AND z)
 console.log(QueryFromExpression("v !x |y !z", "address"))
-// console.log(QueryFromExpression("3 |>10 <20", "address"))
+console.log(QueryFromExpression("3 |>10 <20", "address"))
