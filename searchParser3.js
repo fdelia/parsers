@@ -27,9 +27,9 @@ class Node {
 
 // Already matches operators, however with no logic
 const Tokens = tokens => {
-  this.tokens = tokens.map(x => new Node(Token, x)).map(token => {
-    var type = opMap.has(token.value) ? opMap.get(token.value)[0] : (/^\d+$/.test(token.val) ? Int : Str);
-    return new Node(type, token.value);
+  this.tokens = tokens.map(token => {
+    var type = opMap.has(token) ? opMap.get(token)[0] : (/^\d+$/.test(token) ? Int : Str);
+    return new Node(type, token);
   });
   this.c = 0
 
@@ -57,7 +57,6 @@ const QueryFromExpression = (searchExpression, fieldName) => {
             break;
           case Int:
           case Str:
-          case Token:
             break;
         }
         // if is type string -> Node
