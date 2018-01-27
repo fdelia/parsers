@@ -14,7 +14,7 @@ const Str = Symbol("String")
 // Order gives precedence of operators, higher = higher = first handled
 const opMap = new Map();
 opMap.set("!", [OpPrefix, "NOT"])
-opMap.set("+", [OpInfix, "AND"])
+// opMap.set("+", [OpInfix, "AND"])
 opMap.set("|", [OpInfix, "OR"])
 
 class Node {
@@ -62,8 +62,10 @@ const QueryFromExpression = (searchExpression, fieldName) => {
     // console.log('op ' + op)
 
     while (tokens.move()) { // start at position 1
+      console.log(tokens.c)
       if (tokens.get(0).value !== op) {
         newNodes.push(tokens.get(-1))
+        if (!tokens.get(1)) newNodes.push(tokens.get(0))
         continue;
       }
       // console.log(' found at ' + tokens.c)
@@ -90,11 +92,13 @@ const QueryFromExpression = (searchExpression, fieldName) => {
 }
 
 const PrintAST = (ast, level = 0) => {
-  console.log(ast)
-  // console.log(ast.type + " -> " + ast.value)
-  // if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
+  // console.log(ast)
+  if (ast.length > 0) ast = ast[1]
+  console.log(" - ".repeat(level) + String(ast.type) + " -> " + ast.value)
+  // console.log(ast.children)
+  if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
 }
 
-console.log(QueryFromExpression("x | y ! z", "name")) // x OR (y AND z)
+PrintAST(QueryFromExpression("x | y ! z", "name")) // x OR (y AND z)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
