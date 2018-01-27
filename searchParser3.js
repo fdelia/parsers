@@ -54,9 +54,10 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   tokens = Tokens(tokens);
 
   // Parse logic
-  var newNodes = []
+
   opMap.forEach((opProp, op) => {
     // console.log('op ' + op)
+    var newNodes = []
 
     while (tokens.move() !== null) { // start at position 1
       // console.log(tokens.c)
@@ -64,7 +65,7 @@ const QueryFromExpression = (searchExpression, fieldName) => {
       if (tokens.get(0).value !== op) {
         newNodes.push(tokens.get(-1))
 
-        if (!tokens.get(1)) newNodes.push(tokens.get(0))
+        if (!tokens.get(1) /*|| tokens.get(1).type !== OpInfix*/) newNodes.push(tokens.get(0))
         continue;
       }
       // console.log(' found at ' + tokens.c)
@@ -87,6 +88,26 @@ const QueryFromExpression = (searchExpression, fieldName) => {
     console.log(newNodes);
     tokens = Tokens(newNodes)
   })
+
+  /*const parseNodes = (op, before, current, next) => {
+    if (!next) return [before, current]
+    if (tokens.get(0).value !== op) {
+      return [before, current];
+    }
+  }
+
+  opMap.forEach((opProp, op) => {
+    var newNodes = []
+    while (tokens.move() !== null) { // start at position 1
+      newNodes = newNodes.concat(parseNodes(op, tokens.get(-1), tokens.get(0), tokens.get(1)))
+    }
+    console.log(newNodes);
+    tokens = Tokens(newNodes)
+  })*/
+
+  // tokenNodes -> parsedNodes
+  // parseNodes(-1, 0, 1) -> [a, b, c]
+
   return tokens.tokens;
 }
 
