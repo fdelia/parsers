@@ -15,7 +15,7 @@ const Token = Symbol("Token")
 const opMap = new Map();
 opMap.set("!", [OpPrefix, "NOT"])
 // opMap.set("+", [OpInfix, "AND"])
-// opMap.set("|", [OpInfix, "OR"])
+opMap.set("|", [OpInfix, "OR"])
 
 class Node {
   constructor (type, value, children = []) {
@@ -25,22 +25,29 @@ class Node {
   }
 }
 
+// Already matches operators, however with no logic
 const Tokens = tokens => {
-  this.tokens = tokens.map(x => new Node(Token, x))
+  this.tokens = tokens.map(x => new Node(Token, x)).map(token => {
+    var type = opMap.has(token.value) ? opMap.get(token.value)[0] : (/^\d+$/.test(token.val) ? Int : Str);
+    return new Node(type, token.value);
+  });
   this.c = 0
 
-  const finished = () => this.tokens.every(node => typeof (node) === typeof (Node))
-  const get = () => this.tokens[this.c]
-  const set = (newToken) => { this.tokens[this.c] = newToken; return null; }
-  const peek = () => this.tokens.length > this.c ? this.tokens[this.c + 1] : null;
-  const setPeek = (newToken) => { this.tokens[this.c + 1] = newToken; return null; }
-  const next = () => this.tokens[++this.c]
+  this.finished = () => this.tokens.every(node => typeof (node) === typeof (Node))
+  this.get = () => this.tokens[this.c]
+  this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
+  this.peek = () => this.tokens.length > this.c ? this.tokens[this.c + 1] : null;
+  this.setPeek = (newToken) => { this.tokens[this.c + 1] = newToken; return null; }
+  this.next = () => this.tokens[++this.c]
+
+  return this;
 }
 
 const QueryFromExpression = (searchExpression, fieldName) => {
-  var tokens = new Tokens(searchExpression.split(" ").map(x => x.trim()));
+  var tokens = Tokens(searchExpression.split(" ").map(x => x.trim()));
   console.log(tokens);
 
+  // Parse logic
   opMap.forEach((opProp, op) => {
     while (tokens.peek()) {
       if (opProp[0] === OpPrefix) {
