@@ -25,23 +25,16 @@ class Node {
   }
 }
 
-class Tokens {
-  constructor (tokens) {
-    this.tokens = tokens.map(x => new Node(Token, x))
-    this.c = 0
-  }
-  finished () {
-    return this.tokens.every(node => typeof (node) === typeof (Node))
-  }
-  get () {
-    return this.tokens[this.c]
-  }
-  peek () {
-    return this.tokens.length > this.c ? this.tokens[this.c + 1] : null;
-  }
-  next () {
-    return this.tokens[++this.c]
-  }
+const Tokens = tokens => {
+  this.tokens = tokens.map(x => new Node(Token, x))
+  this.c = 0
+
+  const finished = () => this.tokens.every(node => typeof (node) === typeof (Node))
+  const get = () => this.tokens[this.c]
+  const set = (newToken) => { this.tokens[this.c] = newToken; return null; }
+  const peek = () => this.tokens.length > this.c ? this.tokens[this.c + 1] : null;
+  const setPeek = (newToken) => { this.tokens[this.c + 1] = newToken; return null; }
+  const next = () => this.tokens[++this.c]
 }
 
 const QueryFromExpression = (searchExpression, fieldName) => {
