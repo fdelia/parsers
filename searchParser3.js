@@ -32,14 +32,18 @@ const Tokens = tokens => {
 
   this.finished = () => this.tokens.every(node => typeof (node) === typeof (Node))
   // this.get = () => this.tokens[this.c]
-  // this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
+  this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
   // this.peek = () => this.tokens.length > this.c ? this.tokens[this.c + 1] : null;
   // this.setPeek = (newToken) => { this.tokens[this.c + 1] = newToken; return null; }
   this.move = () => this.tokens.length > this.c + 1 ? this.tokens[++this.c] : null
   // this.before = () => this.tokens[this.c - 1]
 
   this.get = d => this.tokens.length > this.c + d ? this.tokens[this.c + d] : null
-  this.remove = d => delete this.tokens[this.c + d] // this.tokens.splice(this.c + d, 1) // remove that one
+  this.remove = d => {
+    // delete this.tokens[this.c + d]
+    this.tokens.splice(this.c + d, 1) // remove that one
+    if (d <= 0) this.c--
+  }
 
   return this;
 }
@@ -56,40 +60,43 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Parse logic
 
   opMap.forEach((opProp, op) => {
-    // console.log('op ' + op)
-    var newNodes = []
+    tokens.c = 0
+    console.log('op ' + op)
+    // var newNodes = []
 
     while (tokens.move() !== null) { // start at position 1
-      // console.log(tokens.c)
       if (!tokens.get(0)) continue;
       if (tokens.get(0).value !== op) {
-        newNodes.push(tokens.get(-1))
+        // newNodes.push(tokens.get(-1))
+        // console.log(tokens.get(0).value)
 
-        if (!tokens.get(1) /*|| tokens.get(1).type !== OpInfix*/) newNodes.push(tokens.get(0))
+        // if (!tokens.get(1) /* || tokens.get(1).type !== OpInfix */) newNodes.push(tokens.get(0))
         continue;
       }
-      // console.log(' found at ' + tokens.c)
+      console.log(' found at ' + tokens.c)
 
       switch (tokens.get(0).type) {
         case OpPrefix:
-          newNodes.push(tokens.get(-1))
-          newNodes.push(new Node(tokens.get(0).type, tokens.get(0).value, [tokens.get(1)]))
-          tokens.remove(0)
+          // newNodes.push(tokens.get(-1))
+          var curr = tokens.get(0)
+          tokens.set(new Node(curr.type, curr.value, [tokens.get(1)]))
+          // tokens.remove(0)
           tokens.remove(1)
           break;
         case OpInfix:
-          newNodes.push(new Node(tokens.get(0).type, tokens.get(0).value, [tokens.get(-1), tokens.get(1)]))
+          var curr = tokens.get(0)
+          tokens.set(new Node(curr.type, curr.value, [tokens.get(-1), tokens.get(1)]))
           tokens.remove(-1)
-          tokens.remove(0)
+          // tokens.remove(0)
           tokens.remove(1)
           break;
       }
     }
-    console.log(newNodes);
-    tokens = Tokens(newNodes)
+    console.log(tokens.tokens);
+    // tokens = Tokens(newNodes)
   })
 
-  /*const parseNodes = (op, before, current, next) => {
+  /* const parseNodes = (op, before, current, next) => {
     if (!next) return [before, current]
     if (tokens.get(0).value !== op) {
       return [before, current];
@@ -103,12 +110,12 @@ const QueryFromExpression = (searchExpression, fieldName) => {
     }
     console.log(newNodes);
     tokens = Tokens(newNodes)
-  })*/
+  }) */
 
   // tokenNodes -> parsedNodes
   // parseNodes(-1, 0, 1) -> [a, b, c]
 
-  return tokens.tokens;
+  return tokens.tokens.filter(x => x);
 }
 
 const PrintAST = (ast, level = 0) => {
@@ -119,7 +126,8 @@ const PrintAST = (ast, level = 0) => {
   if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
 }
 
-var ast = QueryFromExpression("x | ! y", "name");
+var ast = QueryFromExpression("x | y | z", "name");
+// var ast = QueryFromExpression("x | ! y", "name");
 PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
