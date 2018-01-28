@@ -41,6 +41,7 @@ const Tokens = tokens => {
     if (d <= 0) this.c--
   }
   this.reset = () => { this.c = 0 }
+  this.insertAt = (d, n) => { this.tokens.splice(this.c + d, 0, n) }
 
   return this;
 }
@@ -58,9 +59,14 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Token handler
   tokens = Tokens(tokens);
 
-  // Preparser, add and where two primitives
-  while (tokens.next() !== null) {
-
+  // Preparser, add "and" where two consecutive primitives
+  tokens.c = -1 // start at position 0
+  while (tokens.next() !== null && tokens.get(1)) {
+    if ((tokens.get(0).type === Int || tokens.get(0).type === Str) &&
+    (tokens.get(1).type === Int || tokens.get(1).type === Str)) {
+      tokens.insertAt(1, new Node(OpInfix, "+"))
+      tokens.next()
+    }
   }
 
   // Parser
