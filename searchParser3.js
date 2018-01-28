@@ -3,7 +3,7 @@
 /* eslint semi: 0 */
 'use strict';
 // TODO error handling in parser when wrong syntax
-// OPTIMIZE make it more abstract / easier to read
+// TODO brackets ()
 // TODO "x |-3" doesn't parse the -3 to int
 
 // Types
@@ -63,6 +63,8 @@ const parse = (searchExpression) => {
   tokens = Tokens(tokens);
 
   // Preparser
+  // do brackets here: () have one child
+
   // if operator prefixes primitive, e.g. "here +there", split them to "here + there"
   while (tokens.next()) {
     if (tokens.get(0).type === Str) {
@@ -87,7 +89,8 @@ const parse = (searchExpression) => {
   while (tokens.next() && tokens.get(1)) {
     // console.log(tokens.get(0).value + " " + String(tokens.get(0).type) + " " + String(tokens.get(1).type))
     if ((tokens.get(0).type === Int || tokens.get(0).type === Str) &&
-    (tokens.get(1).type === Int || tokens.get(1).type === Str || tokens.get(1).type === OpPrefix)) {
+        (tokens.get(1).type === Int || tokens.get(1).type === Str || tokens.get(1).type === OpPrefix)) {
+      // tokens.get(1) !== OpInfix) {
       tokens.insertAt(1, new Node(OpInfix, "+"))
       tokens.next()
     }
