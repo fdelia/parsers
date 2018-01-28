@@ -50,7 +50,7 @@ const parse = (searchExpression) => {
 
   // Lexer
   var tokens = searchExpression.split(" ").map(x => x.trim()).map(token => {
-    var type = opMap.has(token) ? opMap.get(token)[0] : (/^\d+$/.test(token) ? Int : Str);
+    var type = opMap.has(token) ? opMap.get(token)[0] : (/^-?\d+$/.test(token) ? Int : Str);
     return new Node(type, token);
   });
 
@@ -65,7 +65,7 @@ const parse = (searchExpression) => {
       if (ops.length > 0) {
         var val = tokens.get(0).value.replace(ops[0], "")
         tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
-        tokens.insertAt(1, new Node(Str, val))
+        tokens.insertAt(1, new Node(/^-?\d+$/.test(val) ? Int : Str, val))
         continue
       }
     }
