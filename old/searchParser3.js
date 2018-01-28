@@ -52,11 +52,10 @@ const Tokens = tokens => {
 
 const parse = (searchExpression) => {
   console.log(searchExpression);
-  const getPrimitiveType = expr => /^-?\d+$/.test(expr) ? Int : Str
 
   // Lexer
   var tokens = searchExpression.split(" ").map(x => x.trim()).map(token => {
-    var type = opMap.has(token) ? opMap.get(token)[0] : getPrimitiveType(token);
+    var type = opMap.has(token) ? opMap.get(token)[0] : (/^-?\d+$/.test(token) ? Int : Str);
     return new Node(type, token);
   });
 
@@ -64,8 +63,8 @@ const parse = (searchExpression) => {
   tokens = Tokens(tokens);
 
   // Preparser
+
   // if operator prefixes primitive, e.g. "here +there", split them to "here + there"
-  tokens.reset()
   while (tokens.next()) {
     if (tokens.get(0).type === Str) {
       var ops = [...opMap.keys()]
@@ -75,7 +74,7 @@ const parse = (searchExpression) => {
       if (ops.length > 0 && tokens.get(0).value.length > ops[0].length) {
         var val = tokens.get(0).value.replace(ops[0], "")
         tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
-        tokens.insertAt(1, new Node(getPrimitiveType(val), val))
+        tokens.insertAt(1, new Node(/^-?\d+$/.test(val) ? Int : Str, val))
         tokens.c--;
         // console.log(tokens.list)
         continue
@@ -96,11 +95,6 @@ const parse = (searchExpression) => {
     }
   }
   // console.log(tokens.list.map(x => x.value))
-
-  // do brackets here: () have one child
-  while (tokens.next()) {
-
-  }
 
   // Parser
   opMap.forEach((opProp, op) => {
@@ -179,5 +173,5 @@ var ast2 = parse("!x |y |!z asd")
 console.log(compile(ast2))
 console.log(compileWithFieldname(ast2, "column"))
 
-var ast3 = parse("x + (y |z)")
-printAST(ast3)
+// console.log(QueryFromExpression("v ! x | y | ! z", "name"))
+// console.log(QueryFromExpression("3 | > 10 < 20", "name"))
