@@ -32,16 +32,14 @@ const Tokens = tokens => {
   this.tokens = tokens
   this.c = 0
 
-  this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
   this.next = () => this.tokens.length > this.c + 1 ? this.tokens[++this.c] : null
-
   this.get = d => this.tokens.length > this.c + d ? this.tokens[this.c + d] : null
+  this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
   this.remove = d => {
-    // delete this.tokens[this.c + d]
     this.tokens.splice(this.c + d, 1) // remove that one
     if (d <= 0) this.c--
   }
-  this.reset = () => { this.c = 0 }
+  this.reset = () => { this.c = -1 }
   this.insertAt = (d, n) => { this.tokens.splice(this.c + d, 0, n) }
 
   return this;
@@ -60,7 +58,6 @@ const parse = (searchExpression) => {
   tokens = Tokens(tokens);
 
   // Preparser
-  tokens.c = -1 // start at position 0
   while (tokens.next() && tokens.get(1)) {
     // if operator at primite, e.g. "here +there", split them to "here + there"
     if (tokens.get(0).type === Str) {
@@ -68,7 +65,7 @@ const parse = (searchExpression) => {
       if (ops.length > 0) {
         var val = tokens.get(0).value.replace(ops[0], "")
         tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
-        tokens.insertAt(0, new Node(Str, val))
+        tokens.insertAt(1, new Node(Str, val))
         continue
       }
     }
@@ -83,12 +80,10 @@ const parse = (searchExpression) => {
   // Parser
   opMap.forEach((opProp, op) => {
     tokens.reset()
-    // console.log('op ' + op)
-
-    while (tokens.next()) { // start at position 1
-      // if (!tokens.get(0)) continue;
+    // console.log(tokens.tokens.map(x => x.value))
+    while (tokens.next()) {
       if (tokens.get(0).value !== op) continue;
-      // console.log(' found at ' + tokens.c)
+      // console.log(op + ' found at ' + tokens.c)
 
       var curr = tokens.get(0)
       switch (curr.type) {
@@ -101,8 +96,6 @@ const parse = (searchExpression) => {
           tokens.remove(-1)
           tokens.remove(1)
           break;
-        // case OpPostfix: // not implemented
-          // break;
       }
     }
     // console.log(tokens.tokens);
@@ -149,9 +142,8 @@ const printAST = (ast, level = 0) => {
 }
 
 var ast = parse("x |-3 z");
-// var ast = QueryFromExpression("x | ! y", "name");
-// printAST(ast.length > 0 ? ast[0] : ast)
 console.log(compileWithFieldname(ast, "name"))
+// printAST(ast)
 
 var ast2 = parse("! x | y | ! z asd")
 console.log(compileWithFieldname(ast2, "name"))
