@@ -162,29 +162,6 @@ const parse = (searchExpression) => {
     console.log(tokens.list.map(x => `${x.value} (${x.children.length})`))
   }
 
-  /* opMap.forEach((opProp, op) => {
-    tokens.reset()
-    // console.log(tokens.list.map(x => x.value))
-    while (tokens.next()) {
-      if (tokens.get(0).value !== op) continue;
-      // console.log(op + ' found at ' + tokens.c)
-
-      var curr = tokens.get(0)
-      switch (curr.type) {
-        case OpPrefix:
-          tokens.set(new Node(curr.type, curr.value, [tokens.get(1)]))
-          tokens.remove(1)
-          break;
-        case OpInfix:
-          tokens.set(new Node(curr.type, curr.value, [tokens.get(-1), tokens.get(1)]))
-          tokens.remove(-1)
-          tokens.remove(1)
-          break;
-      }
-    }
-    // console.log(tokens.list);
-  }) */
-
   return tokens.list; // .filter(x => x);
 }
 
