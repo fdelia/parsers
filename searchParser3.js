@@ -153,7 +153,7 @@ var ast = parse("x |-3 z");
 // printAST(ast.length > 0 ? ast[0] : ast)
 console.log(compileWithFieldname(ast, "name"))
 
-var ast2 = parse("v | ! x | y | ! z asd")
+var ast2 = parse("! x | y | ! z asd")
 console.log(compileWithFieldname(ast2, "name"))
 // printAST(ast2)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
