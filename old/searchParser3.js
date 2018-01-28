@@ -63,6 +63,7 @@ const parse = (searchExpression) => {
   tokens = Tokens(tokens);
 
   // Preparser
+  // do brackets here: () have one child
 
   // if operator prefixes primitive, e.g. "here +there", split them to "here + there"
   while (tokens.next()) {
