@@ -15,7 +15,12 @@ const Str = Symbol("String")
 
 // Order gives precedence of operators, higher = first handled
 const opMap = new Map();
+// opMap.set("!", [OpPrefix, "NOT $0"])
+// opMap.set("-", [OpInfix, "BETWEEN $0 AND $1"])
+// opMap.set("+", [OpInfix, "($0 AND $1)"])
+// opMap.set("|", [OpInfix, "($0 OR $1)"])
 opMap.set("!", [OpPrefix, "NOT"])
+/* opMap.set("-", [OpInfix, "BETWEEN"]) */
 opMap.set("+", [OpInfix, "AND"])
 opMap.set("|", [OpInfix, "OR"])
 
@@ -29,18 +34,18 @@ class Node {
 
 // Tokens handler
 const Tokens = tokens => {
-  this.tokens = tokens
+  this.list = tokens
   this.c = 0
 
-  this.next = () => this.tokens.length > this.c + 1 ? this.tokens[++this.c] : null
-  this.get = d => this.tokens.length > this.c + d ? this.tokens[this.c + d] : null
-  this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
+  this.next = () => this.list.length > this.c + 1 ? this.list[++this.c] : null
+  this.get = d => this.list.length > this.c + d ? this.list[this.c + d] : null
+  this.set = (newToken) => { this.list[this.c] = newToken; return null; }
   this.remove = d => {
-    this.tokens.splice(this.c + d, 1) // remove that one
+    this.list.splice(this.c + d, 1) // remove that one
     if (d <= 0) this.c--
   }
   this.reset = () => { this.c = -1 }
-  this.insertAt = (d, n) => { this.tokens.splice(this.c + d, 0, n) }
+  this.insertAt = (d, n) => { this.list.splice(this.c + d, 0, n) }
 
   return this;
 }
@@ -80,7 +85,7 @@ const parse = (searchExpression) => {
   // Parser
   opMap.forEach((opProp, op) => {
     tokens.reset()
-    // console.log(tokens.tokens.map(x => x.value))
+    // console.log(tokens.list.map(x => x.value))
     while (tokens.next()) {
       if (tokens.get(0).value !== op) continue;
       // console.log(op + ' found at ' + tokens.c)
@@ -98,10 +103,10 @@ const parse = (searchExpression) => {
           break;
       }
     }
-    // console.log(tokens.tokens);
+    // console.log(tokens.list);
   })
 
-  return tokens.tokens; // .filter(x => x);
+  return tokens.list; // .filter(x => x);
 }
 
 const compile = ast => {
@@ -109,10 +114,13 @@ const compile = ast => {
   switch (ast.type) {
     case OpPrefix:
       if (ast.children.length !== 1) console.error("Compile error: Op prefix has no child")
-      return opMap.get(ast.value)[1] + " " + compile(ast.children[0])
+      return opMap.get(ast.value)[1].replace("$0", compile(ast.children[0]))
     case OpInfix:
+      // special case BETWEEN
       if (ast.children.length !== 2) console.error("Compile error: Op infix has not two children")
-      return "(" + compile(ast.children[0]) + " " + opMap.get(ast.value)[1] + " " + compile(ast.children[1]) + ")";
+      return opMap.get(ast.value)[1]
+        .replace("$0", compile(ast.children[0]))
+        .replace("$1", compile(ast.children[1])) // "(" + compile(ast.children[0]) + " " + opMap.get(ast.value)[1] + " " + compile(ast.children[1]) + ")";
     case Int:
     case Str:
       return ast.value;
@@ -142,11 +150,11 @@ const printAST = (ast, level = 0) => {
 }
 
 var ast = parse("x |-3 z");
-console.log(compileWithFieldname(ast, "name"))
+console.log(compile(ast))
 // printAST(ast)
 
-var ast2 = parse("! x | y | ! z asd")
-console.log(compileWithFieldname(ast2, "name"))
+var ast2 = parse("!x | y - z")
+console.log(compileWithFieldname(ast2, "column"))
 // printAST(ast2)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
