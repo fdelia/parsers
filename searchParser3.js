@@ -127,7 +127,19 @@ const compile = ast => {
 }
 
 const compileWithFieldname = (ast, fieldName) => {
-  
+  if (ast.length > 0) ast = ast[0] // can be an array
+  switch (ast.type) {
+    case OpPrefix:
+      if (ast.children.length !== 1) console.error("Compile error: Op prefix has no child")
+      return compileWithFieldname(ast.children[0], fieldName + " " + opMap.get(ast.value)[1])
+      // return opMap.get(ast.value)[1] + " " + compileWithFieldname(ast.children[0], fieldName)
+    case OpInfix:
+      if (ast.children.length !== 2) console.error("Compile error: Op infix has not two children")
+      return "(" + compileWithFieldname(ast.children[0], fieldName) + " " + opMap.get(ast.value)[1] + " " + compileWithFieldname(ast.children[1], fieldName) + ")";
+    case Int:
+    case Str:
+      return `${fieldName} LIKE %${ast.value}%`;
+  }
 }
 
 const printAST = (ast, level = 0) => {
@@ -139,10 +151,10 @@ const printAST = (ast, level = 0) => {
 var ast = parse("x |-3 z");
 // var ast = QueryFromExpression("x | ! y", "name");
 // printAST(ast.length > 0 ? ast[0] : ast)
-console.log(compile(ast))
+console.log(compileWithFieldname(ast, "name"))
 
 var ast2 = parse("v | ! x | y | ! z asd")
-console.log(compile(ast2))
+console.log(compileWithFieldname(ast2, "name"))
 // printAST(ast2)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
