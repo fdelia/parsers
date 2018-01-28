@@ -3,7 +3,7 @@
 /* eslint semi: 0 */
 'use strict';
 // TODO error handling in parser when wrong syntax
-// OPTIMIZE make it more abstract
+// OPTIMIZE make it more abstract / easier to read
 // TODO "x |-3" doesn't parse the -3 to int
 
 // Types
@@ -47,7 +47,7 @@ const Tokens = tokens => {
   return this;
 }
 
-const QueryFromExpression = (searchExpression, fieldName) => {
+const parse = (searchExpression) => {
   console.log(searchExpression);
 
   // Lexer
@@ -111,17 +111,38 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   return tokens.tokens; // .filter(x => x);
 }
 
-const PrintAST = (ast, level = 0) => {
+const compile = ast => {
   if (ast.length > 0) ast = ast[0] // can be an array
-  console.log("   ".repeat(level) + String(ast.type) + " -> " + ast.value)
-  if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
+  switch (ast.type) {
+    case OpPrefix:
+      if (ast.children.length !== 1) console.error("Compile error: Op prefix has no child")
+      return opMap.get(ast.value)[1] + " " + compile(ast.children[0])
+    case OpInfix:
+      if (ast.children.length !== 2) console.error("Compile error: Op infix has not two children")
+      return "(" + compile(ast.children[0]) + " " + opMap.get(ast.value)[1] + " " + compile(ast.children[1]) + ")";
+    case Int:
+    case Str:
+      return ast.value;
+  }
 }
 
-var ast = QueryFromExpression("x |-3 z", "name");
-// var ast = QueryFromExpression("x | ! y", "name");
-PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
+const compileWithFieldname = (ast, fieldName) => {
+  
+}
 
-var ast2 = QueryFromExpression("v | ! x | y | ! z", "name")
-// PrintAST(ast2)
+const printAST = (ast, level = 0) => {
+  if (ast.length > 0) ast = ast[0] // can be an array
+  console.log("   ".repeat(level) + String(ast.type) + " -> " + ast.value)
+  if (ast.children.length > 0) ast.children.forEach(child => printAST(child, level + 1))
+}
+
+var ast = parse("x |-3 z");
+// var ast = QueryFromExpression("x | ! y", "name");
+// printAST(ast.length > 0 ? ast[0] : ast)
+console.log(compile(ast))
+
+var ast2 = parse("v | ! x | y | ! z asd")
+console.log(compile(ast2))
+// printAST(ast2)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
