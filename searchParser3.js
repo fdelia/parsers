@@ -40,6 +40,7 @@ const Tokens = tokens => {
     this.tokens.splice(this.c + d, 1) // remove that one
     if (d <= 0) this.c--
   }
+  this.reset = () => { this.c = 0 }
 
   return this;
 }
@@ -48,6 +49,7 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   console.log(searchExpression);
 
   // Lexer
+  // TODO operators can be at primite like "here +there"
   var tokens = searchExpression.split(" ").map(x => x.trim()).map(token => {
     var type = opMap.has(token) ? opMap.get(token)[0] : (/^\d+$/.test(token) ? Int : Str);
     return new Node(type, token);
@@ -56,9 +58,14 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Token handler
   tokens = Tokens(tokens);
 
+  // Preparser, add and where two primitives
+  while (tokens.next() !== null) {
+
+  }
+
   // Parser
   opMap.forEach((opProp, op) => {
-    tokens.c = 0
+    tokens.reset()
     // console.log('op ' + op)
 
     while (tokens.next() !== null) { // start at position 1
