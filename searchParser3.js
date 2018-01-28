@@ -15,14 +15,14 @@ const Str = Symbol("String")
 
 // Order gives precedence of operators, higher = first handled
 const opMap = new Map();
-// opMap.set("!", [OpPrefix, "NOT $0"])
-// opMap.set("-", [OpInfix, "BETWEEN $0 AND $1"])
-// opMap.set("+", [OpInfix, "($0 AND $1)"])
-// opMap.set("|", [OpInfix, "($0 OR $1)"])
-opMap.set("!", [OpPrefix, "NOT"])
-/* opMap.set("-", [OpInfix, "BETWEEN"]) */
-opMap.set("+", [OpInfix, "AND"])
-opMap.set("|", [OpInfix, "OR"])
+opMap.set("!", [OpPrefix, "NOT $0"])
+opMap.set("-", [OpInfix, "BETWEEN $0 AND $1"])
+opMap.set("+", [OpInfix, "($0 AND $1)"])
+opMap.set("|", [OpInfix, "($0 OR $1)"])
+const opMapFN = new Map();
+opMapFN.set("!", [OpPrefix, "NOT"])
+opMapFN.set("+", [OpInfix, "AND"])
+opMapFN.set("|", [OpInfix, "OR"])
 
 class Node {
   constructor (type, value, children = []) {
@@ -35,7 +35,7 @@ class Node {
 // Tokens handler
 const Tokens = tokens => {
   this.list = tokens
-  this.c = 0
+  this.c = -1
 
   this.next = () => this.list.length > this.c + 1 ? this.list[++this.c] : null
   this.get = d => this.list.length > this.c + d ? this.list[this.c + d] : null
@@ -63,24 +63,36 @@ const parse = (searchExpression) => {
   tokens = Tokens(tokens);
 
   // Preparser
-  while (tokens.next() && tokens.get(1)) {
-    // if operator at primite, e.g. "here +there", split them to "here + there"
+  // if operator prefixes primitive, e.g. "here +there", split them to "here + there"
+  while (tokens.next()) {
     if (tokens.get(0).type === Str) {
-      var ops = [...opMap.keys()].filter(o => tokens.get(0).value.startsWith(o))
-      if (ops.length > 0) {
+      var ops = [...opMap.keys()]
+      .reverse() // orders is reversed: from outer to inner, since we are looking at prefixed operators
+      .filter(o => tokens.get(0).value.startsWith(o))
+      // console.log(ops)
+      if (ops.length > 0 && tokens.get(0).value.length > ops[0].length) {
         var val = tokens.get(0).value.replace(ops[0], "")
         tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
         tokens.insertAt(1, new Node(/^-?\d+$/.test(val) ? Int : Str, val))
+        tokens.c--;
+        // console.log(tokens.list)
         continue
       }
     }
-    // insert "and" where two consecutive primitives
+  }
+  // console.log(tokens.list.map(x => x.value))
+
+  // insert "and" where two consecutive primitives
+  tokens.reset()
+  while (tokens.next() && tokens.get(1)) {
+    // console.log(tokens.get(0).value + " " + String(tokens.get(0).type) + " " + String(tokens.get(1).type))
     if ((tokens.get(0).type === Int || tokens.get(0).type === Str) &&
-    (tokens.get(1).type === Int || tokens.get(1).type === Str)) {
+    (tokens.get(1).type === Int || tokens.get(1).type === Str || tokens.get(1).type === OpPrefix)) {
       tokens.insertAt(1, new Node(OpInfix, "+"))
       tokens.next()
     }
   }
+  // console.log(tokens.list.map(x => x.value))
 
   // Parser
   opMap.forEach((opProp, op) => {
@@ -116,7 +128,6 @@ const compile = ast => {
       if (ast.children.length !== 1) console.error("Compile error: Op prefix has no child")
       return opMap.get(ast.value)[1].replace("$0", compile(ast.children[0]))
     case OpInfix:
-      // special case BETWEEN
       if (ast.children.length !== 2) console.error("Compile error: Op infix has not two children")
       return opMap.get(ast.value)[1]
         .replace("$0", compile(ast.children[0]))
@@ -132,11 +143,11 @@ const compileWithFieldname = (ast, fieldName) => {
   switch (ast.type) {
     case OpPrefix:
       if (ast.children.length !== 1) console.error("Compile error: Op prefix has no child")
-      return compileWithFieldname(ast.children[0], fieldName + " " + opMap.get(ast.value)[1])
+      return compileWithFieldname(ast.children[0], fieldName + " " + opMapFN.get(ast.value)[1])
       // return opMap.get(ast.value)[1] + " " + compileWithFieldname(ast.children[0], fieldName)
     case OpInfix:
       if (ast.children.length !== 2) console.error("Compile error: Op infix has not two children")
-      return "(" + compileWithFieldname(ast.children[0], fieldName) + " " + opMap.get(ast.value)[1] + " " + compileWithFieldname(ast.children[1], fieldName) + ")";
+      return "(" + compileWithFieldname(ast.children[0], fieldName) + " " + opMapFN.get(ast.value)[1] + " " + compileWithFieldname(ast.children[1], fieldName) + ")";
     case Int:
     case Str:
       return `${fieldName} LIKE %${ast.value}%`;
@@ -149,12 +160,16 @@ const printAST = (ast, level = 0) => {
   if (ast.children.length > 0) ast.children.forEach(child => printAST(child, level + 1))
 }
 
-var ast = parse("x |-3 z");
-console.log(compile(ast))
+var ast = parse("x |-3 !z");
 // printAST(ast)
+console.log(compile(ast))
+console.log(compileWithFieldname(ast, "column"))
+console.log("")
 
-var ast2 = parse("!x | y - z")
-console.log(compileWithFieldname(ast2, "column"))
+var ast2 = parse("!x |y |!z asd")
 // printAST(ast2)
+console.log(compile(ast2))
+console.log(compileWithFieldname(ast2, "column"))
+
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
