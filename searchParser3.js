@@ -59,9 +59,18 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Token handler
   tokens = Tokens(tokens);
 
-  // Preparser, add "and" where two consecutive primitives
+  // Preparser, insert "and" where two consecutive primitives
   tokens.c = -1 // start at position 0
-  while (tokens.next() !== null && tokens.get(1)) {
+  while (tokens.next() && tokens.get(1)) {
+    if (tokens.get(0).type === Str) {
+      var ops = [...opMap.keys()].filter(o => tokens.get(0).value.startsWith(o))
+      if (ops.length > 0) {
+        var val = tokens.get(0).value.replace(ops[0], "")
+        tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
+        tokens.insertAt(0, new Node(Str, val))
+        continue
+      }
+    }
     if ((tokens.get(0).type === Int || tokens.get(0).type === Str) &&
     (tokens.get(1).type === Int || tokens.get(1).type === Str)) {
       tokens.insertAt(1, new Node(OpInfix, "+"))
@@ -74,7 +83,7 @@ const QueryFromExpression = (searchExpression, fieldName) => {
     tokens.reset()
     // console.log('op ' + op)
 
-    while (tokens.next() !== null) { // start at position 1
+    while (tokens.next()) { // start at position 1
       // if (!tokens.get(0)) continue;
       if (tokens.get(0).value !== op) continue;
       // console.log(' found at ' + tokens.c)
@@ -106,11 +115,11 @@ const PrintAST = (ast, level = 0) => {
   if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
 }
 
-var ast = QueryFromExpression("x | y z", "name");
+var ast = QueryFromExpression("x |y z", "name");
 // var ast = QueryFromExpression("x | ! y", "name");
 PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
 
 var ast2 = QueryFromExpression("v | ! x | y | ! z", "name")
-PrintAST(ast2)
+// PrintAST(ast2)
 // console.log(QueryFromExpression("v ! x | y | ! z", "name"))
 // console.log(QueryFromExpression("3 | > 10 < 20", "name"))
