@@ -2,6 +2,8 @@
 /* eslint quotes: 0 */
 /* eslint semi: 0 */
 'use strict';
+// TODO error handling in parser when wrong syntax
+// OPTIMIZE make it more abstract
 
 // Types
 const OpPrefix = Symbol("OpPrefix")
@@ -29,9 +31,8 @@ const Tokens = tokens => {
   this.tokens = tokens
   this.c = 0
 
-  this.finished = () => this.tokens.every(node => typeof (node) === typeof (Node))
   this.set = (newToken) => { this.tokens[this.c] = newToken; return null; }
-  this.move = () => this.tokens.length > this.c + 1 ? this.tokens[++this.c] : null
+  this.next = () => this.tokens.length > this.c + 1 ? this.tokens[++this.c] : null
 
   this.get = d => this.tokens.length > this.c + d ? this.tokens[this.c + d] : null
   this.remove = d => {
@@ -55,13 +56,13 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Token handler
   tokens = Tokens(tokens);
 
-  // Parse logic
+  // Parser
   opMap.forEach((opProp, op) => {
     tokens.c = 0
     // console.log('op ' + op)
 
-    while (tokens.move() !== null) { // start at position 1
-      if (!tokens.get(0)) continue;
+    while (tokens.next() !== null) { // start at position 1
+      // if (!tokens.get(0)) continue;
       if (tokens.get(0).value !== op) continue;
       // console.log(' found at ' + tokens.c)
 
@@ -76,6 +77,8 @@ const QueryFromExpression = (searchExpression, fieldName) => {
           tokens.remove(-1)
           tokens.remove(1)
           break;
+        // case OpPostfix: // not implemented
+          // break;
       }
     }
     // console.log(tokens.tokens);
@@ -90,9 +93,9 @@ const PrintAST = (ast, level = 0) => {
   if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
 }
 
-// var ast = QueryFromExpression("x | y + z", "name");
+var ast = QueryFromExpression("x | y z", "name");
 // var ast = QueryFromExpression("x | ! y", "name");
-// PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
+PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
 
 var ast2 = QueryFromExpression("v | ! x | y | ! z", "name")
 PrintAST(ast2)
