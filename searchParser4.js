@@ -53,6 +53,8 @@ const Tokens = tokens => {
 const parse = (searchExpression) => {
   console.log(searchExpression);
   const getPrimitiveType = expr => /^-?\d+$/.test(expr) ? Int : Str
+  const operations = [...opMap.keys()]
+  const higherRank = (op1, op2) => operations.indexOf(op1) <= operations.indexOf(op2)
 
   // Lexer
   var tokens = searchExpression.split(" ").map(x => x.trim()).map(token => {
@@ -76,7 +78,7 @@ const parse = (searchExpression) => {
         var val = tokens.get(0).value.replace(ops[0], "")
         tokens.set(new Node(opMap.get(ops[0])[0], ops[0]))
         tokens.insertAt(1, new Node(getPrimitiveType(val), val))
-        tokens.c--;
+        // tokens.c--;
         // console.log(tokens.list)
         continue
       }
@@ -97,13 +99,70 @@ const parse = (searchExpression) => {
   }
   // console.log(tokens.list.map(x => x.value))
 
-  // do brackets here: () have one child
+  // Parser
+  // Problem: need to save the last active node in the tree
+  // need to move around in the tree: add to current node, move to parent
+  tokens.reset()
   while (tokens.next()) {
+    if (!tokens.get(1)) {
+      // TODO
+      continue;
+    }
+    var cur = tokens.get(0)
+    var peek = tokens.get(1)
+    // console.log(`${cur.value}: ${String(cur.type)} / ${String(peek.type)}`)
+    console.log(cur.value)
+    switch (cur.type) {
+      case OpPrefix:
+      case OpInfix:
+        switch (peek.type) {
+          case OpPrefix:
+            // TODO
+            break
+          case OpInfix:
+            if (higherRank(cur.type, peek.type)) {
+              if (cur.type === OpPrefix && cur.children.length < 1) console.error(`Missing argument for ${cur.val}, expected 1.`)
+              if (cur.type === OpInfix && cur.children.length < 2) console.error(`Missing argument for ${cur.val}, expected 2.`)
+              peek.children.unshift(cur.children.pop())
+              cur.children.push(peek)
+              tokens.set(cur)
+              tokens.remove(1)
+              // tokens.c--
+            } else {
 
+            }
+            break
+          case Str:
+          case Int:
+            cur.children.push(peek)
+            tokens.set(cur)
+            tokens.remove(1)
+            tokens.c--
+            break
+        }
+        break
+      case Str:
+      case Int:
+        switch (peek.type) {
+          case OpPrefix: continue
+          case OpInfix:
+            peek.children.push(cur)
+            tokens.set(peek)
+            tokens.remove(1)
+            tokens.c--
+            break
+          case Str:
+          case Int:
+            // TODO add "AND" in between?
+            continue
+            break
+        }
+        break
+    }
+    console.log(tokens.list.map(x => `${x.value} (${x.children.length})`))
   }
 
-  // Parser
-  opMap.forEach((opProp, op) => {
+  /* opMap.forEach((opProp, op) => {
     tokens.reset()
     // console.log(tokens.list.map(x => x.value))
     while (tokens.next()) {
@@ -124,7 +183,7 @@ const parse = (searchExpression) => {
       }
     }
     // console.log(tokens.list);
-  })
+  }) */
 
   return tokens.list; // .filter(x => x);
 }
@@ -169,11 +228,11 @@ const printAST = (ast, level = 0) => {
 }
 
 var ast = parse("x |-3 !z");
-// printAST(ast)
-console.log(compile(ast))
-console.log(compileWithFieldname(ast, "column"))
-console.log("")
-
+printAST(ast)
+// console.log(compile(ast))
+// console.log(compileWithFieldname(ast, "column"))
+// console.log("")
+/*
 var ast2 = parse("!x |y |!z asd")
 // printAST(ast2)
 console.log(compile(ast2))
@@ -181,3 +240,4 @@ console.log(compileWithFieldname(ast2, "column"))
 
 var ast3 = parse("x + (y |z)")
 printAST(ast3)
+*/
