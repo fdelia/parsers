@@ -4,6 +4,7 @@
 'use strict';
 // TODO error handling in parser when wrong syntax
 // OPTIMIZE make it more abstract
+// TODO "x |-3" doesn't parse the -3 to int
 
 // Types
 const OpPrefix = Symbol("OpPrefix")
@@ -50,7 +51,6 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   console.log(searchExpression);
 
   // Lexer
-  // TODO operators can be at primite like "here +there"
   var tokens = searchExpression.split(" ").map(x => x.trim()).map(token => {
     var type = opMap.has(token) ? opMap.get(token)[0] : (/^\d+$/.test(token) ? Int : Str);
     return new Node(type, token);
@@ -59,9 +59,10 @@ const QueryFromExpression = (searchExpression, fieldName) => {
   // Token handler
   tokens = Tokens(tokens);
 
-  // Preparser, insert "and" where two consecutive primitives
+  // Preparser
   tokens.c = -1 // start at position 0
   while (tokens.next() && tokens.get(1)) {
+    // if operator at primite, e.g. "here +there", split them to "here + there"
     if (tokens.get(0).type === Str) {
       var ops = [...opMap.keys()].filter(o => tokens.get(0).value.startsWith(o))
       if (ops.length > 0) {
@@ -71,6 +72,7 @@ const QueryFromExpression = (searchExpression, fieldName) => {
         continue
       }
     }
+    // insert "and" where two consecutive primitives
     if ((tokens.get(0).type === Int || tokens.get(0).type === Str) &&
     (tokens.get(1).type === Int || tokens.get(1).type === Str)) {
       tokens.insertAt(1, new Node(OpInfix, "+"))
@@ -115,7 +117,7 @@ const PrintAST = (ast, level = 0) => {
   if (ast.children.length > 0) ast.children.forEach(child => PrintAST(child, level + 1))
 }
 
-var ast = QueryFromExpression("x |y z", "name");
+var ast = QueryFromExpression("x |-3 z", "name");
 // var ast = QueryFromExpression("x | ! y", "name");
 PrintAST(ast.length > 0 ? ast[0] : ast) // x OR (y AND z)
 
